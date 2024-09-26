@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 import { getQuotesApi } from "./services/allApi";
-import { motion, useMotionTemplate, useMotionValue,animate } from 'framer-motion';
+import { motion, useMotionTemplate, useMotionValue, animate } from 'framer-motion';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowsRotate } from "@fortawesome/free-solid-svg-icons";
+import { Stars } from "@react-three/drei";
+import { Canvas } from "@react-three/fiber";
 
 const charVariants = {
     hidden: { opacity: 0 },
@@ -12,7 +14,7 @@ const charVariants = {
 const figcaptionVariants = {
     hidden: { opacity: 0 },
     reveal: { opacity: 1 }
-}
+};
 
 const splitStringUsingRegex = (str) => {
     return str.split('');
@@ -26,29 +28,38 @@ function App() {
     const [anim, setAnim] = useState(false);
     const [figcaptionVisible, setFigcaptionVisible] = useState(false);
     const ref = useRef(null);
+    const color = useMotionValue(COLORS[0]);
 
-    const getQuotes = async () => {
+    const fetchNewQuote = async () => {
         try {
+            setQuoteData({quote:"",author:""})
             const result = await getQuotesApi();
             const { data } = result;
             const fetchedQuote = data.quotes[Math.floor(Math.random() * data.quotes.length)];
             setQuoteData(fetchedQuote);
-
-            setTimeout(()=>setAnim(true),800)
-            setTimeout(() => setFigcaptionVisible(true), 4000);
+            setAnim(false);
+            setFigcaptionVisible(false); 
+            setTimeout(() => {
+                setAnim(true);
+                setTimeout(() => {
+                    setFigcaptionVisible(true);
+                }, 5000);
+            }, 500);
+            
         } catch (error) {
             console.error("Error fetching quotes:", error);
         }
     };
 
     useEffect(() => {
-        getQuotes();
-        animate(color,COLORS,{
-            ease:"easeInOut",
-            duration:10,
-            repeat:Infinity,
-            reapeatType:"mirror"
+        fetchNewQuote();
+        animate(color, COLORS, {
+            ease: "easeInOut",
+            duration: 10,
+            repeat: Infinity,
+            repeatType: "mirror"
         });
+
         const observer = new IntersectionObserver(
             ([entry]) => setInView(entry.isIntersecting),
             { threshold: 0.1 }
@@ -65,10 +76,11 @@ function App() {
         };
     }, []);
 
-    const text = `" ${quoteData.quote}"`;
+    var text = `" ${quoteData.quote}"`;
     const splitQuote = splitStringUsingRegex(text);
-    const color = useMotionValue(COLORS[0]);
     const backgroundImage = useMotionTemplate`radial-gradient(100% 100% at 50% 0%, #020617 50%, ${color})`;
+    const border = useMotionTemplate`1px solid ${color}`;
+    const boxShadow = useMotionTemplate`0px 4px 24px ${color}`;
 
     return (
         <motion.section
@@ -121,13 +133,40 @@ function App() {
                             animate={figcaptionVisible ? "reveal" : "hidden"}
                             variants={figcaptionVariants}
                             transition={{ duration: 0.5 }}
-                            className="flex items-center justify-center mt-5 text-2xl sm:text-4xl bg-black-400"
-                            onClick={() => window.location.reload(false)} 
+                            className="relative flex items-center justify-center mt-5 text-2xl z-20 sm:text-4xl bg-black-400"
                         >
-                            <FontAwesomeIcon icon={faArrowsRotate}/>
+                            <motion.button
+                                onClick={fetchNewQuote}
+                                whileHover={{ scale: 1.015 }}
+                                whileTap={{ scale: 0.985 }}
+                                style={{ border, boxShadow }}
+                                className="group relative flex w-fit items-center gap-1.5 rounded-full bg-grey-950/10 px-4 py-2 text-grey-50 transition-colors hover:bg-gray-950/50"
+                            >
+                                <FontAwesomeIcon icon={faArrowsRotate} />
+                            </motion.button>
                         </motion.div>
                     </figcaption>
                 </figure>
+            </div>
+            <div className="absolute inset-0 z-0">
+                <Canvas>
+                    <Stars radius={50} count={1000} factor={4} fade speed={2} />
+                </Canvas>
+            </div>
+            <div className="absolute inset-0 z-0">
+                <Canvas>
+                    <Stars radius={50} count={100} factor={4} fade speed={2} />
+                </Canvas>
+            </div>
+            <div className="absolute inset-0 z-0">
+                <Canvas>
+                    <Stars radius={50} count={1500} factor={4} fade speed={2} />
+                </Canvas>
+            </div>
+            <div className="absolute inset-0 z-0">
+                <Canvas>
+                    <Stars radius={50} count={500} factor={4} fade speed={2} />
+                </Canvas>
             </div>
         </motion.section>
     );
